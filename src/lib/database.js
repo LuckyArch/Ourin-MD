@@ -1,12 +1,15 @@
 /**
  * @file src/lib/database.js
- * @description Simple JSON database untuk menyimpan data user dan settings
+ * @description LowDB database untuk menyimpan data user dan settings dengan realtime sync
  * @author Ourin-AI Team
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 const fs = require('fs');
 const path = require('path');
+
+// LowDB imports (ESM -> CJS compatibility)
+let Low, JSONFileSync, JSONFile;
 
 /**
  * @typedef {Object} UserData
@@ -36,7 +39,19 @@ const path = require('path');
  */
 
 /**
- * Database class untuk mengelola data
+ * Default database structure
+ */
+const defaultData = {
+    users: {},
+    groups: {},
+    settings: {
+        selfMode: false
+    },
+    stats: {}
+};
+
+/**
+ * Database class menggunakan LowDB
  * @class
  */
 class Database {
@@ -46,13 +61,87 @@ class Database {
      */
     constructor(dbPath) {
         this.dbPath = dbPath;
-        this.data = {};
-        this.saveTimeout = null;
-        this.autoSaveInterval = 60000;
+        this.db = null;
+        this.ready = false;
         
         this.ensureDir();
-        this.load();
-        this.startAutoSave();
+    }
+    
+    /**
+     * Initialize database (async for ESM module loading)
+     */
+    async init() {
+        try {
+            // Dynamic import for lowdb (ESM module)
+            const lowdb = await import('lowdb');
+            Low = lowdb.Low;
+            JSONFileSync = lowdb.JSONFileSync;
+            
+            const dbFile = path.join(this.dbPath, 'db.json');
+            const adapter = new JSONFileSync(dbFile);
+            this.db = new Low(adapter, defaultData);
+            
+            // Read existing data
+            await this.db.read();
+            
+            // Ensure default structure
+            if (!this.db.data) {
+                this.db.data = defaultData;
+            }
+            this.db.data = { ...defaultData, ...this.db.data };
+            
+            // Write to ensure file exists
+            await this.db.write();
+            
+            this.ready = true;
+            console.log('[Database] LowDB initialized successfully');
+            
+            // Migrate old data if exists
+            await this.migrateOldData();
+            
+            return this;
+        } catch (error) {
+            console.error('[Database] Failed to initialize:', error.message);
+            // Fallback to in-memory
+            this.db = { data: defaultData };
+            this.ready = true;
+            return this;
+        }
+    }
+    
+    /**
+     * Migrate data lama dari format JSON terpisah
+     */
+    async migrateOldData() {
+        const oldFiles = ['users.json', 'groups.json', 'settings.json', 'stats.json'];
+        
+        for (const file of oldFiles) {
+            const oldPath = path.join(this.dbPath, file);
+            const key = file.replace('.json', '');
+            
+            if (fs.existsSync(oldPath)) {
+                try {
+                    const content = fs.readFileSync(oldPath, 'utf-8');
+                    const data = JSON.parse(content);
+                    
+                    // Merge with existing
+                    if (key === 'users' || key === 'groups') {
+                        this.db.data[key] = { ...this.db.data[key], ...data };
+                    } else {
+                        this.db.data[key] = { ...this.db.data[key], ...data };
+                    }
+                    
+                    // Backup and remove old file
+                    const backupPath = oldPath + '.bak';
+                    fs.renameSync(oldPath, backupPath);
+                    console.log(`[Database] Migrated ${file}`);
+                } catch (e) {
+                    console.log(`[Database] Skip migration ${file}:`, e.message);
+                }
+            }
+        }
+        
+        await this.save();
     }
     
     /**
@@ -66,39 +155,13 @@ class Database {
     }
     
     /**
-     * Memuat semua data dari file JSON
-     * @private
-     */
-    load() {
-        const files = ['users', 'groups', 'settings', 'stats'];
-        
-        for (const file of files) {
-            const filePath = path.join(this.dbPath, `${file}.json`);
-            try {
-                if (fs.existsSync(filePath)) {
-                    const content = fs.readFileSync(filePath, 'utf-8');
-                    this.data[file] = JSON.parse(content);
-                } else {
-                    this.data[file] = {};
-                }
-            } catch (error) {
-                console.error(`[Database] Failed to load ${file}:`, error.message);
-                this.data[file] = {};
-            }
-        }
-        
-        console.log('[Database] Data loaded successfully');
-    }
-    
-    /**
-     * Menyimpan semua data ke file JSON
+     * Menyimpan data ke file (realtime)
      * @returns {boolean} True jika berhasil
      */
-    save() {
+    async save() {
         try {
-            for (const [name, data] of Object.entries(this.data)) {
-                const filePath = path.join(this.dbPath, `${name}.json`);
-                fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+            if (this.db && this.db.write) {
+                await this.db.write();
             }
             return true;
         } catch (error) {
@@ -108,37 +171,14 @@ class Database {
     }
     
     /**
-     * Menyimpan dengan debounce untuk menghindari write berlebihan
-     * @private
-     */
-    debouncedSave() {
-        if (this.saveTimeout) {
-            clearTimeout(this.saveTimeout);
-        }
-        this.saveTimeout = setTimeout(() => {
-            this.save();
-        }, 5000);
-    }
-    
-    /**
-     * Memulai auto-save interval
-     * @private
-     */
-    startAutoSave() {
-        setInterval(() => {
-            this.save();
-        }, this.autoSaveInterval);
-    }
-    
-    /**
      * Mendapatkan data user
      * @param {string} jid - JID user
      * @returns {UserData|null} Data user atau null
      */
     getUser(jid) {
-        if (!jid) return null;
+        if (!jid || !this.db?.data) return null;
         const cleanJid = jid.replace(/@.+/g, '');
-        return this.data.users[cleanJid] || null;
+        return this.db.data.users[cleanJid] || null;
     }
     
     /**
@@ -148,12 +188,12 @@ class Database {
      * @returns {UserData} Updated user data
      */
     setUser(jid, data = {}) {
-        if (!jid) return null;
+        if (!jid || !this.db?.data) return null;
         const cleanJid = jid.replace(/@.+/g, '');
         
-        const existing = this.data.users[cleanJid] || {};
+        const existing = this.db.data.users[cleanJid] || {};
         
-        this.data.users[cleanJid] = {
+        this.db.data.users[cleanJid] = {
             jid: cleanJid,
             name: data.name || existing.name || 'Unknown',
             number: cleanJid,
@@ -168,8 +208,9 @@ class Database {
             ...data
         };
         
-        this.debouncedSave();
-        return this.data.users[cleanJid];
+        // Realtime save
+        this.save();
+        return this.db.data.users[cleanJid];
     }
     
     /**
@@ -178,12 +219,12 @@ class Database {
      * @returns {boolean} True jika berhasil
      */
     deleteUser(jid) {
-        if (!jid) return false;
+        if (!jid || !this.db?.data) return false;
         const cleanJid = jid.replace(/@.+/g, '');
         
-        if (this.data.users[cleanJid]) {
-            delete this.data.users[cleanJid];
-            this.debouncedSave();
+        if (this.db.data.users[cleanJid]) {
+            delete this.db.data.users[cleanJid];
+            this.save();
             return true;
         }
         return false;
@@ -194,7 +235,7 @@ class Database {
      * @returns {Object<string, UserData>} Object semua users
      */
     getAllUsers() {
-        return this.data.users || {};
+        return this.db?.data?.users || {};
     }
     
     /**
@@ -202,13 +243,13 @@ class Database {
      * @returns {number} Total user
      */
     getUserCount() {
-        return Object.keys(this.data.users || {}).length;
+        return Object.keys(this.db?.data?.users || {}).length;
     }
     
     /**
      * Update limit user
      * @param {string} jid - JID user
-     * @param {number} amount - Jumlah limit yang diubah (positif untuk tambah, negatif untuk kurang)
+     * @param {number} amount - Jumlah limit yang diubah
      * @returns {number} Limit baru
      */
     updateLimit(jid, amount) {
@@ -223,7 +264,7 @@ class Database {
      * @param {string} jid - JID user
      * @param {string} command - Nama command
      * @param {number} seconds - Durasi cooldown dalam detik
-     * @returns {number|false} Sisa waktu cooldown atau false jika tidak ada cooldown
+     * @returns {number|false} Sisa waktu cooldown atau false
      */
     checkCooldown(jid, command, seconds) {
         const user = this.getUser(jid);
@@ -260,8 +301,8 @@ class Database {
      * @returns {GroupData|null} Data group atau null
      */
     getGroup(jid) {
-        if (!jid) return null;
-        return this.data.groups[jid] || null;
+        if (!jid || !this.db?.data) return null;
+        return this.db.data.groups[jid] || null;
     }
     
     /**
@@ -271,11 +312,11 @@ class Database {
      * @returns {GroupData} Updated group data
      */
     setGroup(jid, data = {}) {
-        if (!jid) return null;
+        if (!jid || !this.db?.data) return null;
         
-        const existing = this.data.groups[jid] || {};
+        const existing = this.db.data.groups[jid] || {};
         
-        this.data.groups[jid] = {
+        this.db.data.groups[jid] = {
             jid,
             name: data.name || existing.name || 'Unknown Group',
             welcome: data.welcome ?? existing.welcome ?? true,
@@ -287,8 +328,8 @@ class Database {
             ...data
         };
         
-        this.debouncedSave();
-        return this.data.groups[jid];
+        this.save();
+        return this.db.data.groups[jid];
     }
     
     /**
@@ -296,7 +337,7 @@ class Database {
      * @returns {Object<string, GroupData>} Object semua groups
      */
     getAllGroups() {
-        return this.data.groups || {};
+        return this.db?.data?.groups || {};
     }
     
     /**
@@ -306,11 +347,13 @@ class Database {
      * @returns {*} Value setting
      */
     setting(key, value = undefined) {
+        if (!this.db?.data) return undefined;
+        
         if (value !== undefined) {
-            this.data.settings[key] = value;
-            this.debouncedSave();
+            this.db.data.settings[key] = value;
+            this.save();
         }
-        return this.data.settings[key];
+        return this.db.data.settings[key];
     }
     
     /**
@@ -318,7 +361,7 @@ class Database {
      * @returns {Object} Object settings
      */
     getSettings() {
-        return this.data.settings || {};
+        return this.db?.data?.settings || {};
     }
     
     /**
@@ -328,12 +371,14 @@ class Database {
      * @returns {number} Nilai baru
      */
     incrementStat(key, increment = 1) {
-        if (!this.data.stats[key]) {
-            this.data.stats[key] = 0;
+        if (!this.db?.data) return 0;
+        
+        if (!this.db.data.stats[key]) {
+            this.db.data.stats[key] = 0;
         }
-        this.data.stats[key] += increment;
-        this.debouncedSave();
-        return this.data.stats[key];
+        this.db.data.stats[key] += increment;
+        this.save();
+        return this.db.data.stats[key];
     }
     
     /**
@@ -342,10 +387,12 @@ class Database {
      * @returns {number|Object} Nilai stats atau semua stats
      */
     getStats(key) {
+        if (!this.db?.data) return key ? 0 : {};
+        
         if (key) {
-            return this.data.stats[key] || 0;
+            return this.db.data.stats[key] || 0;
         }
-        return this.data.stats || {};
+        return this.db.data.stats || {};
     }
     
     /**
@@ -354,9 +401,11 @@ class Database {
      * @returns {number} Jumlah user yang di-reset
      */
     resetAllLimits(limit = 25) {
+        if (!this.db?.data) return 0;
+        
         let count = 0;
-        for (const jid of Object.keys(this.data.users)) {
-            this.data.users[jid].limit = limit;
+        for (const jid of Object.keys(this.db.data.users)) {
+            this.db.data.users[jid].limit = limit;
             count++;
         }
         this.save();
@@ -376,7 +425,7 @@ class Database {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const backupPath = path.join(backupDir, `backup-${timestamp}.json`);
         
-        fs.writeFileSync(backupPath, JSON.stringify(this.data, null, 2), 'utf-8');
+        fs.writeFileSync(backupPath, JSON.stringify(this.db?.data || {}, null, 2), 'utf-8');
         
         return backupPath;
     }
@@ -385,13 +434,14 @@ class Database {
 let dbInstance = null;
 
 /**
- * Inisialisasi database
+ * Inisialisasi database (async)
  * @param {string} dbPath - Path ke directory database
- * @returns {Database} Instance database
+ * @returns {Promise<Database>} Instance database
  */
-function initDatabase(dbPath) {
+async function initDatabase(dbPath) {
     if (!dbInstance) {
         dbInstance = new Database(dbPath);
+        await dbInstance.init();
     }
     return dbInstance;
 }

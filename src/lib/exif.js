@@ -1,13 +1,46 @@
 /**
  * @file src/lib/exif.js
- * @description Library untuk penanganan EXIF sticker dan media
+ * @description Library untuk penanganan EXIF sticker menggunakan node-webpmux + fluent-ffmpeg
  * @author Ourin-AI Team
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 const fs = require('fs');
 const path = require('path');
 const Crypto = require('crypto');
+
+// FFmpeg setup
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+const ffmpeg = require('fluent-ffmpeg');
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+
+// node-webpmux for proper WebP EXIF handling
+let webpmux;
+
+/**
+ * Initialize webpmux module
+ */
+async function initWebpmux() {
+    if (!webpmux) {
+        try {
+            webpmux = require('node-webpmux');
+        } catch (e) {
+            console.error('[EXIF] Failed to load node-webpmux:', e.message);
+        }
+    }
+    return webpmux;
+}
+
+/**
+ * Get temp directory
+ */
+function getTempDir() {
+    const tmpDir = path.join(process.cwd(), 'tmp');
+    if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+    }
+    return tmpDir;
+}
 
 /**
  * Default sticker metadata
@@ -22,10 +55,6 @@ const DEFAULT_METADATA = {
 /**
  * Create EXIF buffer untuk sticker
  * @param {Object} options - Opsi metadata
- * @param {string} [options.packname] - Nama pack sticker
- * @param {string} [options.author] - Nama author
- * @param {string} [options.packId] - Package ID
- * @param {string[]} [options.emojis] - Array emoji
  * @returns {Buffer} EXIF buffer
  */
 function createExif(options = {}) {
@@ -62,48 +91,182 @@ function createExif(options = {}) {
 }
 
 /**
- * Create EXIF file untuk sticker
- * @param {Object} options - Opsi metadata
- * @param {string} [options.packname] - Nama pack sticker
- * @param {string} [options.author] - Nama author
- * @param {string} [options.packId] - Package ID
- * @param {string[]} [options.emojis] - Array emoji
- * @returns {string} Path ke file EXIF
+ * Convert image buffer to WebP using FFmpeg with contain mode (no crop)
+ * @param {Buffer} buffer - Image buffer
+ * @returns {Promise<Buffer>} WebP buffer
  */
-function createExifFile(options = {}) {
-    const exifBuffer = createExif(options);
-    const tmpDir = path.join(process.cwd(), 'tmp');
-    
-    if (!fs.existsSync(tmpDir)) {
-        fs.mkdirSync(tmpDir, { recursive: true });
-    }
-    
-    const exifPath = path.join(tmpDir, `exif_${Date.now()}.exif`);
-    fs.writeFileSync(exifPath, exifBuffer);
-    
-    return exifPath;
+function imageToWebpFFmpeg(buffer) {
+    return new Promise((resolve, reject) => {
+        const tmpDir = getTempDir();
+        const inputPath = path.join(tmpDir, `img_${Date.now()}_${Crypto.randomBytes(4).toString('hex')}.png`);
+        const outputPath = path.join(tmpDir, `sticker_${Date.now()}_${Crypto.randomBytes(4).toString('hex')}.webp`);
+        
+        fs.writeFileSync(inputPath, buffer);
+        
+        ffmpeg(inputPath)
+            .outputOptions([
+                '-vcodec', 'libwebp',
+                '-vf', "scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x00000000,setsar=1",
+                '-loop', '0',
+                '-preset', 'default',
+                '-an',
+                '-vsync', '0',
+                '-quality', '80'
+            ])
+            .toFormat('webp')
+            .on('end', () => {
+                try {
+                    const webpBuffer = fs.readFileSync(outputPath);
+                    // Cleanup
+                    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+                    if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+                    resolve(webpBuffer);
+                } catch (err) {
+                    reject(err);
+                }
+            })
+            .on('error', (err) => {
+                // Cleanup on error
+                if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+                if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+                reject(err);
+            })
+            .save(outputPath);
+    });
 }
 
 /**
- * Add EXIF to WebP buffer
+ * Convert video buffer to animated WebP using FFmpeg with contain mode
+ * @param {Buffer} buffer - Video buffer
+ * @param {Object} options - Options
+ * @returns {Promise<Buffer>} Animated WebP buffer
+ */
+function videoToWebpFFmpeg(buffer, options = {}) {
+    return new Promise((resolve, reject) => {
+        const tmpDir = getTempDir();
+        const inputPath = path.join(tmpDir, `vid_${Date.now()}_${Crypto.randomBytes(4).toString('hex')}.mp4`);
+        const outputPath = path.join(tmpDir, `animated_${Date.now()}_${Crypto.randomBytes(4).toString('hex')}.webp`);
+        
+        fs.writeFileSync(inputPath, buffer);
+        
+        const duration = options.duration || 5;
+        const fps = options.fps || 15;
+        
+        ffmpeg(inputPath)
+            .inputOptions(['-y'])
+            .outputOptions([
+                '-vcodec', 'libwebp',
+                '-vf', `fps=${fps},scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x00000000,setsar=1`,
+                '-loop', '0',
+                '-ss', '0',
+                '-t', String(duration),
+                '-preset', 'default',
+                '-an',
+                '-vsync', '0'
+            ])
+            .toFormat('webp')
+            .on('end', () => {
+                try {
+                    const webpBuffer = fs.readFileSync(outputPath);
+                    // Cleanup
+                    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+                    if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+                    resolve(webpBuffer);
+                } catch (err) {
+                    reject(err);
+                }
+            })
+            .on('error', (err) => {
+                // Cleanup on error
+                if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+                if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+                reject(err);
+            })
+            .save(outputPath);
+    });
+}
+
+/**
+ * Add EXIF to WebP using node-webpmux
+ * @param {Buffer} webpBuffer - Buffer WebP
+ * @param {Object} options - Opsi metadata
+ * @returns {Promise<Buffer>} WebP buffer dengan EXIF
+ */
+async function addExifToWebp(webpBuffer, options = {}) {
+    await initWebpmux();
+    
+    if (!webpmux) {
+        // Fallback to old method if webpmux not available
+        return addExifToWebpFallback(webpBuffer, options);
+    }
+    
+    try {
+        const exif = createExif(options);
+        const img = new webpmux.Image();
+        
+        await img.load(webpBuffer);
+        img.exif = exif;
+        
+        return await img.save(null);
+    } catch (error) {
+        console.error('[EXIF] webpmux error:', error.message);
+        return addExifToWebpFallback(webpBuffer, options);
+    }
+}
+
+/**
+ * Create sticker from image buffer with EXIF
+ * @param {Buffer} imageBuffer - Image buffer
+ * @param {Object} options - Metadata options
+ * @returns {Promise<Buffer>} Sticker WebP buffer with EXIF
+ */
+async function createStickerFromImage(imageBuffer, options = {}) {
+    // Convert image to WebP with contain mode
+    const webpBuffer = await imageToWebpFFmpeg(imageBuffer);
+    
+    // Add EXIF metadata
+    return await addExifToWebp(webpBuffer, options);
+}
+
+/**
+ * Create animated sticker from video buffer with EXIF
+ * @param {Buffer} videoBuffer - Video buffer
+ * @param {Object} options - Metadata and conversion options
+ * @returns {Promise<Buffer>} Animated sticker WebP buffer with EXIF
+ */
+async function createStickerFromVideo(videoBuffer, options = {}) {
+    // Convert video to animated WebP with contain mode
+    const webpBuffer = await videoToWebpFFmpeg(videoBuffer, {
+        duration: options.duration || 5,
+        fps: options.fps || 15
+    });
+    
+    // Add EXIF metadata
+    return await addExifToWebp(webpBuffer, {
+        packname: options.packname,
+        author: options.author,
+        emojis: options.emojis
+    });
+}
+
+/**
+ * Fallback method untuk add EXIF (manual buffer manipulation)
  * @param {Buffer} webpBuffer - Buffer WebP
  * @param {Object} options - Opsi metadata
  * @returns {Buffer} WebP buffer dengan EXIF
  */
-function addExifToWebp(webpBuffer, options = {}) {
+function addExifToWebpFallback(webpBuffer, options = {}) {
     const exif = createExif(options);
     
     // Check if already has EXIF
     const hasExif = webpBuffer.indexOf(Buffer.from('EXIF')) !== -1;
     
     if (hasExif) {
-        // Remove existing EXIF and add new one
         return replaceExifInWebp(webpBuffer, exif);
     }
     
     // WebP structure: RIFF + size + WEBP + chunks
     const riffHeader = webpBuffer.slice(0, 4);
-    const fileSize = webpBuffer.readUInt32LE(4);
     const webpSignature = webpBuffer.slice(8, 12);
     const webpData = webpBuffer.slice(12);
     
@@ -132,32 +295,26 @@ function addExifToWebp(webpBuffer, options = {}) {
  * @returns {Buffer} WebP buffer dengan EXIF baru
  */
 function replaceExifInWebp(webpBuffer, newExif) {
-    // Find EXIF chunk
     const exifIndex = webpBuffer.indexOf(Buffer.from('EXIF'));
     
     if (exifIndex === -1) {
-        return addExifToWebp(webpBuffer, {});
+        return addExifToWebpFallback(webpBuffer, {});
     }
     
-    // Read old EXIF size
     const oldExifSize = webpBuffer.readUInt32LE(exifIndex + 4);
     const padding = oldExifSize % 2 === 1 ? 1 : 0;
     
-    // Parts before and after EXIF
     const beforeExif = webpBuffer.slice(0, exifIndex);
     const afterExif = webpBuffer.slice(exifIndex + 8 + oldExifSize + padding);
     
-    // Create new EXIF chunk
     const exifChunkId = Buffer.from('EXIF');
     const exifSize = Buffer.alloc(4);
     exifSize.writeUInt32LE(newExif.length);
     
     const newPadding = newExif.length % 2 === 1 ? Buffer.from([0x00]) : Buffer.alloc(0);
     
-    // Combine
     const newWebp = Buffer.concat([beforeExif, exifChunkId, exifSize, newExif, newPadding, afterExif]);
     
-    // Update file size in RIFF header
     const newFileSize = newWebp.length - 8;
     newWebp.writeUInt32LE(newFileSize, 4);
     
@@ -179,7 +336,6 @@ function readExifFromWebp(webpBuffer) {
     const exifSize = webpBuffer.readUInt32LE(exifIndex + 4);
     const exifData = webpBuffer.slice(exifIndex + 8, exifIndex + 8 + exifSize);
     
-    // Skip TIFF header (22 bytes) and parse JSON
     try {
         const jsonStart = 22;
         const jsonData = exifData.slice(jsonStart);
@@ -215,7 +371,6 @@ function isAnimatedWebp(buffer) {
         return false;
     }
     
-    // Check for ANIM or ANMF chunk
     return buffer.indexOf(Buffer.from('ANIM')) !== -1 || 
            buffer.indexOf(Buffer.from('ANMF')) !== -1;
 }
@@ -231,7 +386,7 @@ function getWebpDimensions(buffer) {
     }
     
     try {
-        // Look for VP8 chunk
+        // VP8 chunk
         const vp8Index = buffer.indexOf(Buffer.from('VP8 '));
         if (vp8Index !== -1) {
             const width = buffer.readUInt16LE(vp8Index + 14) & 0x3FFF;
@@ -239,7 +394,7 @@ function getWebpDimensions(buffer) {
             return { width, height };
         }
         
-        // Look for VP8L chunk (lossless)
+        // VP8L chunk (lossless)
         const vp8lIndex = buffer.indexOf(Buffer.from('VP8L'));
         if (vp8lIndex !== -1) {
             const bits = buffer.readUInt32LE(vp8lIndex + 9);
@@ -248,7 +403,7 @@ function getWebpDimensions(buffer) {
             return { width, height };
         }
         
-        // Look for VP8X chunk (extended)
+        // VP8X chunk (extended)
         const vp8xIndex = buffer.indexOf(Buffer.from('VP8X'));
         if (vp8xIndex !== -1) {
             const width = (buffer.readUIntLE(vp8xIndex + 12, 3) + 1);
@@ -271,10 +426,10 @@ function generateStickerId() {
 }
 
 /**
- * Clean temporary EXIF files
+ * Clean temporary files
  * @param {number} [maxAge=3600000] - Max age in ms (default 1 hour)
  */
-function cleanTempExifFiles(maxAge = 3600000) {
+function cleanTempFiles(maxAge = 3600000) {
     const tmpDir = path.join(process.cwd(), 'tmp');
     
     if (!fs.existsSync(tmpDir)) {
@@ -285,16 +440,18 @@ function cleanTempExifFiles(maxAge = 3600000) {
     const files = fs.readdirSync(tmpDir);
     
     for (const file of files) {
-        if (file.startsWith('exif_')) {
+        if (file.startsWith('exif_') || file.startsWith('input_') || 
+            file.startsWith('output_') || file.startsWith('img_') || 
+            file.startsWith('vid_') || file.startsWith('sticker_') ||
+            file.startsWith('animated_')) {
             const filePath = path.join(tmpDir, file);
-            const stat = fs.statSync(filePath);
-            
-            if (now - stat.mtimeMs > maxAge) {
-                try {
+            try {
+                const stat = fs.statSync(filePath);
+                if (now - stat.mtimeMs > maxAge) {
                     fs.unlinkSync(filePath);
-                } catch {
-                    // Ignore errors
                 }
+            } catch {
+                // Ignore errors
             }
         }
     }
@@ -334,10 +491,19 @@ const PRESETS = {
 module.exports = {
     // Core functions
     createExif,
-    createExifFile,
     addExifToWebp,
+    addExifToWebpFallback,
     replaceExifInWebp,
     readExifFromWebp,
+    initWebpmux,
+    
+    // FFmpeg conversion functions
+    imageToWebpFFmpeg,
+    videoToWebpFFmpeg,
+    
+    // Full sticker creation (conversion + EXIF)
+    createStickerFromImage,
+    createStickerFromVideo,
     
     // Validation
     isValidWebp,
@@ -346,7 +512,11 @@ module.exports = {
     
     // Utilities
     generateStickerId,
-    cleanTempExifFiles,
+    cleanTempFiles,
+    getTempDir,
+    
+    // FFmpeg instance
+    ffmpeg,
     
     // Presets & defaults
     DEFAULT_METADATA,

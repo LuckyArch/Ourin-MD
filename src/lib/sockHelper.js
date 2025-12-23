@@ -74,14 +74,13 @@ function videoToWebp(buffer) {
             .inputOptions(['-y'])
             .outputOptions([
                 '-vcodec', 'libwebp',
-                '-vf', "fps=15,scale='min(320,iw)':min'(320,ih)':force_original_aspect_ratio=decrease,pad=320:320:(ow-iw)/2:(oh-ih)/2:color=0x00000000,setsar=1",
+                '-vf', "fps=15,scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x00000000,setsar=1",
                 '-loop', '0',
                 '-ss', '0',
                 '-t', '5',
                 '-preset', 'default',
                 '-an',
-                '-vsync', '0',
-                '-s', '512:512'
+                '-vsync', '0'
             ])
             .toFormat('webp')
             .on('end', () => {
@@ -183,9 +182,9 @@ function extendSocket(sock) {
             throw new Error('Failed to convert image: ' + err.message);
         }
         
-        // Add EXIF metadata for packname and author
+        // Add EXIF metadata for packname and author (async with node-webpmux)
         try {
-            webpBuffer = addExifToWebp(webpBuffer, {
+            webpBuffer = await addExifToWebp(webpBuffer, {
                 packname: options.packname || DEFAULT_METADATA.packname,
                 author: options.author || DEFAULT_METADATA.author,
                 emojis: options.emojis || DEFAULT_METADATA.emojis

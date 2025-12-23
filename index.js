@@ -12,6 +12,7 @@ const { startConnection } = require('./src/connection');
 const { messageHandler, groupHandler } = require('./src/handler');
 const { loadPlugins, pluginStore } = require('./src/lib/plugins');
 const { initDatabase } = require('./src/lib/database');
+const { initScheduler, loadScheduledMessages } = require('./src/lib/scheduler');
 const { 
     logger, 
     c, 
@@ -152,10 +153,10 @@ async function main() {
     setupAntiCrash();
     divider();
     
-    // Initialize database
+    // Initialize database (async for lowdb)
     logger.info('Initializing database...');
     const dbPath = path.join(process.cwd(), config.database?.path || './src/database');
-    initDatabase(dbPath);
+    await initDatabase(dbPath);
     logger.success('Database ready!');
     
     // Load plugins
@@ -168,6 +169,11 @@ async function main() {
     if (config.dev?.enabled && config.dev?.watchPlugins) {
         startDevWatcher(pluginsPath);
     }
+    
+    // Initialize scheduler (daily limit reset)
+    logger.info('Initializing scheduler...');
+    initScheduler(config);
+    logger.success('Scheduler ready!');
     
     // Boot time
     const bootTime = Date.now() - startTime;
@@ -211,6 +217,10 @@ async function main() {
             if (update.connection === 'open') {
                 logConnection('connected', sock.user?.name || 'Bot');
                 logger.success('Ready to receive messages!');
+                
+                // Load scheduled messages after connection ready
+                loadScheduledMessages(sock);
+                
                 if (config.dev?.enabled) {
                     logger.system('DEV MODE', 'Active');
                 }

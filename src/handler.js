@@ -6,12 +6,14 @@
  */
 
 const config = require('../config');
+const { isSelf } = require('../config');
 const { serialize } = require('./lib/serialize');
 const { getPlugin, getPluginCount } = require('./lib/plugins');
 const { getDatabase } = require('./lib/database');
 const { formatUptime, createWaitMessage, createErrorMessage } = require('./lib/formatter');
 const { getUptime } = require('./connection');
 const { logger, logMessage, logCommand, c } = require('./lib/colors');
+const { isLid, lidToJid, convertLidArray } = require('./lib/lidHelper');
 
 /**
  * @typedef {Object} HandlerContext
@@ -112,6 +114,16 @@ async function messageHandler(msg, sock) {
         if (!m) return;
         if (!m.message) return;
         
+        // Get database instance
+        const db = getDatabase();
+        
+        // Self mode check - only bot number can access
+        const selfModeEnabled = db.setting('selfMode');
+        if (selfModeEnabled && !isSelf(m.senderNumber)) {
+            // Silently ignore non-bot users in self mode
+            return;
+        }
+        
         if (m.isBanned) {
             logger.warn('Banned user', m.sender);
             return;
@@ -125,9 +137,7 @@ async function messageHandler(msg, sock) {
             await sock.readMessages([m.key]);
         }
         
-        const db = getDatabase();
-        
-        // Filter Unknown senders
+        // db already declared above
         if (!m.pushName || m.pushName === 'Unknown' || m.pushName.trim() === '') {
             return;
         }
@@ -253,7 +263,12 @@ async function groupHandler(update, sock) {
         
         const groupMeta = await sock.groupMetadata(groupJid);
         
-        for (const participant of participants) {
+        for (let participant of participants) {
+            // Convert LID to standard JID
+            if (isLid(participant)) {
+                participant = lidToJid(participant);
+            }
+            
             const participantName = participant.split('@')[0];
             
             if (action === 'add' && groupData.welcome) {

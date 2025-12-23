@@ -1,8 +1,8 @@
 /**
  * @file plugins/main/menu.js
- * @description Plugin menu dengan UI premium - full unicode, tags, compact
+ * @description Plugin menu dengan desain baru - semua command ditampilkan di menu utama
  * @author Ourin-AI Team
- * @version 5.0.0
+ * @version 6.0.0
  */
 
 const config = require('../../config');
@@ -20,8 +20,8 @@ const pluginConfig = {
     alias: ['help', 'bantuan', 'commands', 'm'],
     category: 'main',
     description: 'Menampilkan menu utama bot',
-    usage: '.menu [kategori]',
-    example: '.menu owner',
+    usage: '.menu',
+    example: '.menu',
     isOwner: false,
     isPremium: false,
     isGroup: false,
@@ -29,30 +29,6 @@ const pluginConfig = {
     cooldown: 5,
     limit: 0,
     isEnabled: true
-};
-
-/**
- * Unicode decorations
- */
-const U = {
-    // Box Drawing
-    tl: '╭', tr: '╮', bl: '╰', br: '╯',
-    h: '─', v: '│', vl: '├', vr: '┤',
-    hl: '┬', hb: '┴', cross: '┼',
-    
-    // Bullets & Arrows
-    bullet: '◦', diamond: '◇', star: '✦',
-    arrow: '➤', arrowR: '→', arrowD: '↳',
-    check: '', cross2: '✗', dot: '•',
-    
-    // Decorative
-    sparkle: '✨', fire: '🔥', bolt: '⚡',
-    crown: '👑', gem: '💎', heart: '❤️',
-    shield: '🛡️', sword: '⚔️', magic: '✦',
-    
-    // Status
-    online: '🟢', offline: '🔴', away: '🟡',
-    verified: '', badge: '🏷️'
 };
 
 /**
@@ -75,25 +51,6 @@ const CATEGORY_EMOJIS = {
 };
 
 /**
- * Deskripsi untuk setiap kategori
- */
-const CATEGORY_DESC = {
-    owner: 'Owner Only',
-    main: 'Menu Utama',
-    utility: 'Tools & Utils',
-    fun: 'Game & Fun',
-    group: 'Group Mgmt',
-    download: 'Downloader',
-    search: 'Search',
-    tools: 'Tools',
-    sticker: 'Sticker',
-    ai: 'AI Features',
-    game: 'Games',
-    media: 'Media',
-    info: 'Information'
-};
-
-/**
  * Format waktu compact
  */
 function formatTime(date) {
@@ -108,8 +65,9 @@ function formatTime(date) {
  * Format tanggal compact
  */
 function formatDateShort(date) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 /**
@@ -117,7 +75,6 @@ function formatDateShort(date) {
  */
 async function handler(m, { sock, config: botConfig, db, uptime }) {
     const prefix = botConfig.command?.prefix || '.';
-    const args = m.args;
     
     const user = db.getUser(m.sender);
     const now = new Date();
@@ -126,96 +83,110 @@ async function handler(m, { sock, config: botConfig, db, uptime }) {
     
     const categories = getCategories();
     const commandsByCategory = getCommandsByCategory();
-
-    const tags = [];
-    if (m.isOwner) tags.push(`${U.crown} OWNER`);
-    else if (m.isPremium) tags.push(`${U.gem} PREMIUM`);
-    else tags.push(`${U.dot} USER`);
     
-    const statusTag = tags.join(' ');
+    // Hitung total commands
+    let totalCommands = 0;
+    for (const category of categories) {
+        totalCommands += (commandsByCategory[category] || []).length;
+    }
     
-    if (args[0]) {
-        const categoryName = args[0].toLowerCase();
-        
-        if (commandsByCategory[categoryName]) {
-            const commands = commandsByCategory[categoryName];
-            const emoji = CATEGORY_EMOJIS[categoryName] || '📋';
-            
-            let txt = '';
-            txt += `${U.tl}${U.h.repeat(20)}${U.tr}\n`;
-            txt += `${U.v} ${emoji} *${categoryName.toUpperCase()}*\n`;
-            txt += `${U.v} ${U.dot} ${commands.length} commands\n`;
-            txt += `${U.vl}${U.h.repeat(20)}${U.vr}\n`;
-            
-            for (const cmd of commands) {
-                txt += `${U.v} ${U.arrowR} ${prefix}${cmd}\n`;
-            }
-            
-            txt += `${U.bl}${U.h.repeat(20)}${U.br}\n`;
-            txt += `\n${U.sparkle} _Ketik command untuk info_`;
-            
-            await sendMenuWithUI(m, sock, txt, botConfig, statusTag, prefix, categories, commandsByCategory);
-            return;
-        }
-        
-        await m.reply(`${U.cross2} Kategori *${args[0]}* tidak ada!`);
-        return;
+    // Tentukan role user
+    let userRole = 'User';
+    let roleEmoji = '👤';
+    if (m.isOwner) {
+        userRole = 'Owner';
+        roleEmoji = '👑';
+    } else if (m.isPremium) {
+        userRole = 'Premium';
+        roleEmoji = '💎';
     }
     
     const greeting = getTimeGreeting();
     const uptimeFormatted = formatUptime(uptime);
     const totalUsers = db.getUserCount();
     
-    let totalCommands = 0;
-    for (const category of categories) {
-        totalCommands += (commandsByCategory[category] || []).length;
-    }
     let txt = '';
     
-    txt += `${U.sparkle} ${greeting}, *${m.pushName}*!\n\n`;
+    // Header greeting
+    txt += `Hallo ${m.pushName} ${greeting.includes('pagi') ? '🌅' : greeting.includes('siang') ? '☀️' : greeting.includes('sore') ? '🌇' : '🌙'}\n`;
+    txt += `${greeting}! Selamat datang di *${botConfig.bot?.name || 'Ourin-AI'}*\n\n`;
     
-    txt += `${U.tl}${U.h}「 ${U.badge} *USER INFO* 」${U.h}${U.tr}\n`;
-    txt += `${U.v} ${U.dot} *Name*: ${m.pushName}\n`;
-    txt += `${U.v} ${U.dot} *Tag*: ${statusTag}\n`;
-    txt += `${U.v} ${U.dot} *Limit*: ${user?.limit || 25}\n`;
-    txt += `${U.v} ${U.dot} *Time*: ${timeStr} WIB\n`;
-    txt += `${U.bl}${U.h.repeat(22)}${U.br}\n\n`;
-    txt += `${U.tl}${U.h}「 🤖 *BOT INFO* 」${U.h}${U.tr}\n`;
-    txt += `${U.v} ${U.dot} *Bot*: ${botConfig.bot?.name || 'Ourin-AI'}\n`;
-    txt += `${U.v} ${U.dot} *Ver*: v${botConfig.bot?.version || '1.0.0'}\n`;
-    txt += `${U.v} ${U.dot} *Mode*: ${botConfig.mode || 'public'}\n`;
-    txt += `${U.v} ${U.dot} *Prefix*: [ ${prefix} ]\n`;
-    txt += `${U.v} ${U.dot} *Uptime*: ${uptimeFormatted}\n`;
-    txt += `${U.v} ${U.dot} *Users*: ${totalUsers}\n`;
-    txt += `${U.bl}${U.h.repeat(22)}${U.br}\n\n`;
-    txt += `${U.tl}${U.h}「 📚 *KATEGORI* 」${U.h}${U.tr}\n`;
+    // ═══════════════════════════════
+    // BOT INFO
+    // ═══════════════════════════════
+    txt += `╭┈┈⽗「 🤖 *BOT INFO* 」\n`;
+    txt += `││ ރ Nama: *${botConfig.bot?.name || 'Ourin-AI'}*\n`;
+    txt += `││ ރ Versi: *v${botConfig.bot?.version || '1.1.0'}*\n`;
+    txt += `││ ރ Mode: *${(botConfig.mode || 'public').toUpperCase()}*\n`;
+    txt += `││ ރ Prefix: *[ ${prefix} ]*\n`;
+    txt += `││ ރ Uptime: *${uptimeFormatted}*\n`;
+    txt += `││ ރ Total User: *${totalUsers}*\n`;
+    txt += `││ ރ Total Command: *${totalCommands}*\n`;
+    txt += `╰┈┈┈┈┈┈┈┈⽗\n\n`;
     
-    for (const category of categories) {
+    // ═══════════════════════════════
+    // USER INFO
+    // ═══════════════════════════════
+    txt += `╭┈┈⽗「 👤 *USER INFO* 」\n`;
+    txt += `││ ރ Nama: *${m.pushName}*\n`;
+    txt += `││ ރ Role: *${roleEmoji} ${userRole}*\n`;
+    txt += `││ ރ Limit: *${user?.limit ?? 25}*\n`;
+    txt += `││ ރ Waktu: *${timeStr} WIB*\n`;
+    txt += `││ ރ Tanggal: *${dateStr}*\n`;
+    txt += `╰┈┈┈┈┈┈┈┈⽗\n\n`;
+    
+    // ═══════════════════════════════
+    // ALL COMMANDS BY CATEGORY
+    // ═══════════════════════════════
+    
+    // Urutan kategori yang diinginkan
+    const categoryOrder = ['owner', 'main', 'utility', 'tools', 'fun', 'game', 'download', 'search', 'sticker', 'media', 'ai', 'group', 'info'];
+    
+    // Sort categories berdasarkan order
+    const sortedCategories = categories.sort((a, b) => {
+        const indexA = categoryOrder.indexOf(a);
+        const indexB = categoryOrder.indexOf(b);
+        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+    });
+    
+    for (const category of sortedCategories) {
+        // Skip owner category jika bukan owner
         if (category === 'owner' && !m.isOwner) continue;
-        const emoji = CATEGORY_EMOJIS[category] || '📋';
-        const desc = CATEGORY_DESC[category] || 'Commands';
-        const cmdCount = (commandsByCategory[category] || []).length;
-        const catName = category.charAt(0).toUpperCase() + category.slice(1);
         
-        txt += `${U.v} ${emoji} *${catName}* (${cmdCount})\n`;
-        txt += `${U.v}    ${U.arrowD} ${prefix}menu ${category}\n`;
+        const commands = commandsByCategory[category] || [];
+        if (commands.length === 0) continue;
+        
+        const emoji = CATEGORY_EMOJIS[category] || '📋';
+        const categoryName = category.toUpperCase();
+        
+        txt += `╭┈┈⽗「 ${emoji} \`${categoryName}\` 」\n`;
+        
+        for (const cmd of commands) {
+            txt += `││ ރ ${prefix}${cmd}\n`;
+        }
+        
+        txt += `╰┈┈┈┈┈┈┈┈⽗\n\n`;
     }
-    txt += `${U.v}\n`;
-    txt += `${U.bl}${U.h}「 Total: ${totalCommands} 」${U.h}${U.br}\n\n`;
-    txt += `${U.star} *${botConfig.bot?.name || 'Ourin-AI'}*\n`;
-    txt += `${U.dot} ${dateStr}`;
     
-    await sendMenuWithUI(m, sock, txt, botConfig, statusTag, prefix, categories, commandsByCategory);
+    // ═══════════════════════════════
+    // FOOTER
+    // ═══════════════════════════════
+    txt += `© *${botConfig.bot?.name || 'Ourin-AI'}* | ${new Date().getFullYear()}\n`;
+    txt += `Developer: *${botConfig.bot?.developer || 'Lucky Archz'}*`;
+    
+    // Kirim menu
+    await sendMenuWithUI(m, sock, txt, botConfig);
 }
 
 /**
  * Mengirim menu dengan UI premium
  */
-async function sendMenuWithUI(m, sock, text, botConfig, statusTag, prefix, categories, commandsByCategory) {
+async function sendMenuWithUI(m, sock, text, botConfig) {
     const botName = botConfig.bot?.name || 'Ourin-AI';
     const saluranId = botConfig.saluran?.id || '120363208449943317@newsletter';
     const saluranName = botConfig.saluran?.name || botName;
     const saluranLink = botConfig.saluran?.link || '';
+    
     const fakeStatusQuoted = {
         key: {
             fromMe: false,
@@ -224,7 +195,7 @@ async function sendMenuWithUI(m, sock, text, botConfig, statusTag, prefix, categ
         },
         message: {
             extendedTextMessage: {
-                text: `${U.sparkle} *${botName}*`,
+                text: `✨ *${botName}*`,
                 contextInfo: {
                     isForwarded: true,
                     forwardingScore: 999,
@@ -238,38 +209,6 @@ async function sendMenuWithUI(m, sock, text, botConfig, statusTag, prefix, categ
         }
     };
     
-    const categoryRows = [];
-    for (const category of categories) {
-        if (category === 'owner' && !m.isOwner) continue;
-        const emoji = CATEGORY_EMOJIS[category] || '📋';
-        const desc = CATEGORY_DESC[category] || 'Commands';
-        const cmdCount = (commandsByCategory[category] || []).length;
-        
-        categoryRows.push({
-            title: `${emoji} ${category.charAt(0).toUpperCase() + category.slice(1)}`,
-            description: `${desc} • ${cmdCount} cmd`,
-            rowId: `${prefix}menu ${category}`
-        });
-    }
-
-    const buttons = [
-        {
-            buttonId: `${prefix}owner`,
-            buttonText: { displayText: `${U.crown} OWNER` },
-            buttonType: 1
-        },
-        {
-            buttonId: `${prefix}runtime`,
-            buttonText: { displayText: `${U.bolt} RUNTIME` },
-            buttonType: 1
-        },
-        {
-            buttonId: `${prefix}ping`,
-            buttonText: { displayText: `${U.online} PING` },
-            buttonType: 1
-        }
-    ];
-
     let imagePath = path.join(process.cwd(), 'assets', 'images', 'ourin.jpg');
     let thumbPath = path.join(process.cwd(), 'assets', 'images', 'ourin2.jpg');
     
@@ -284,7 +223,6 @@ async function sendMenuWithUI(m, sock, text, botConfig, statusTag, prefix, categ
     }
     
     const messageContent = {
-        caption: text,
         contextInfo: {
             mentionedJid: [m.sender],
             forwardingScore: 9999,
@@ -295,16 +233,14 @@ async function sendMenuWithUI(m, sock, text, botConfig, statusTag, prefix, categ
                 serverMessageId: 127
             },
             externalAdReply: {
-                title: `${botName} ${U.verified}`,
-                body: `${statusTag} • Ver: ${botConfig.bot?.version || '1.0.0'}`,
+                title: `${botName} `,
+                body: `v${botConfig.bot?.version || '1.1.0'} | ${botConfig.mode || 'public'}`,
                 sourceUrl: saluranLink,
                 mediaType: 1,
                 showAdAttribution: false,
                 renderLargerThumbnail: false
             }
-        },
-        footer: `${botName}`,
-        headerType: 1
+        }
     };
     
     if (thumbBuffer) {
@@ -318,13 +254,12 @@ async function sendMenuWithUI(m, sock, text, botConfig, statusTag, prefix, categ
         messageContent.text = text;
     }
 
-    messageContent.buttons = buttons;
-    
     try {
         await sock.sendMessage(m.chat, messageContent, {
             quoted: fakeStatusQuoted
         });
     } catch (error) {
+        // Fallback ke text biasa
         await m.reply(text);
     }
 }

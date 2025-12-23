@@ -77,11 +77,12 @@ const config = {
      */
     bot: {
         name: 'Ourin-AI',
-        version: '1.0.0',
+        version: '1.1.0',
         description: 'WhatsApp Multi-Device Bot dengan sistem plugin modular',
         developer: '( Zann / Lucky Archz )',
         website: '',
-        github: ''
+        github: '',
+        number: null // Bot number - will be auto-detected
     },
 
     /**
@@ -349,6 +350,15 @@ function getConfig(path, defaultValue = null) {
 function isOwner(number) {
     if (!number) return false;
     const cleanNumber = number.replace(/[^0-9]/g, '');
+    
+    // Bot number is always owner
+    if (config.bot.number) {
+        const botClean = config.bot.number.replace(/[^0-9]/g, '');
+        if (cleanNumber.includes(botClean) || botClean.includes(cleanNumber)) {
+            return true;
+        }
+    }
+    
     return config.owner.number.some(owner => {
         const cleanOwner = owner.replace(/[^0-9]/g, '');
         return cleanNumber.includes(cleanOwner) || cleanOwner.includes(cleanNumber);
@@ -388,11 +398,35 @@ function isBanned(number) {
     });
 }
 
+/**
+ * Set bot number (called after connection)
+ * @param {string} number - Bot's phone number
+ */
+function setBotNumber(number) {
+    if (number) {
+        config.bot.number = number.replace(/[^0-9]/g, '');
+    }
+}
+
+/**
+ * Check if number is the bot itself (for self mode)
+ * @param {string} number - Number to check
+ * @returns {boolean} True if number is the bot
+ */
+function isSelf(number) {
+    if (!number || !config.bot.number) return false;
+    const cleanNumber = number.replace(/[^0-9]/g, '');
+    const botNumber = config.bot.number.replace(/[^0-9]/g, '');
+    return cleanNumber.includes(botNumber) || botNumber.includes(cleanNumber);
+}
+
 module.exports = {
     ...config,
     config,
     getConfig,
     isOwner,
     isPremium,
-    isBanned
+    isBanned,
+    setBotNumber,
+    isSelf
 };

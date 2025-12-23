@@ -354,5 +354,27 @@ module.exports = {
     // Utils
     getTimestamp,
     divider,
-    BOX
+    BOX,
+    
+    // Direct color exports (legacy support)
+    red: c.red,
+    yellow: c.yellow,
+    cyan: c.cyan,
+    green: c.green,
+    gray: c.gray,
+    white: c.white,
+    purple: c.purple,
+    bold: c.bold,
+    dim: c.dim,
+    greenBold: c.greenBold,
+    purpleBold: c.purpleBold,
+    whiteBold: c.whiteBold,
+    grayDim: c.grayDim,
+    
+    // Bright aliases
+    brightGreen: c.green,
+    brightRed: c.red,
+    brightYellow: c.yellow,
+    brightCyan: c.cyan
 };
+

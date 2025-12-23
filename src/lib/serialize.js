@@ -24,6 +24,7 @@ const {
 const { writeFileSync, mkdirSync, existsSync, unlinkSync } = require('fs');
 const { join } = require('path');
 const config = require('../../config');
+const { isLid, lidToJid, convertLidArray, decodeAndNormalize } = require('./lidHelper');
 
 /**
  * @typedef {Object} ContextInfo
@@ -214,11 +215,11 @@ async function serializeQuotedMessage(message, type, sock) {
     const quoted = {
         id: contextInfo.stanzaId || '',
         sender: decodeJid(contextInfo.participant || ''),
-        senderNumber: (contextInfo.participant || '').replace(/@.+/g, ''),
+        senderNumber: (decodeJid(contextInfo.participant || '') || '').replace(/@.+/g, ''),
         type: quotedType,
         body: getMessageBody(quotedMessage, quotedType),
         message: quotedMessage,
-        mentionedJid: contextInfo.mentionedJid || [],
+        mentionedJid: convertLidArray(contextInfo.mentionedJid || []),
         isMedia: ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage'].includes(quotedType),
         isImage: quotedType === 'imageMessage',
         isVideo: quotedType === 'videoMessage',
@@ -365,7 +366,7 @@ async function serialize(sock, msg, store = {}) {
     }
     
     const messageContent = messageData[m.type];
-    m.mentionedJid = messageContent?.contextInfo?.mentionedJid || [];
+    m.mentionedJid = convertLidArray(messageContent?.contextInfo?.mentionedJid || []);
     
     m.isMedia = ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage'].includes(m.type);
     m.isImage = m.type === 'imageMessage';

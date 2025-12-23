@@ -20,6 +20,7 @@ const readline = require('readline');
 const config = require('../config');
 const colors = require('./lib/colors');
 const { extendSocket } = require('./lib/sockHelper');
+const { isLid, lidToJid, decodeAndNormalize } = require('./lib/lidHelper');
 
 /**
  * @typedef {Object} ConnectionState
@@ -35,6 +36,7 @@ const { extendSocket } = require('./lib/sockHelper');
  */
 const connectionState = {
     isConnected: false,
+    isReady: false, // Flag to prevent premature message handling
     sock: null,
     reconnectAttempts: 0,
     connectedAt: null
@@ -253,13 +255,21 @@ async function startConnection(options = {}) {
         
         if (connection === 'open') {
             connectionState.isConnected = true;
+            connectionState.isReady = true;
             connectionState.reconnectAttempts = 0;
             connectionState.connectedAt = new Date();
+            
+            // Set bot number for auto-owner
+            const botNumber = sock.user?.id?.split(':')[0] || sock.user?.id?.split('@')[0];
+            if (botNumber) {
+                config.setBotNumber(botNumber);
+                colors.logger.info('Bot', `Bot number set: ${botNumber}`);
+            }
             
             console.log('');
             colors.logger.success('Connection', 'Terhubung ke WhatsApp!');
             colors.logger.info('Bot', `Nama: ${config.bot?.name || 'Ourin-AI'}`);
-            colors.logger.info('Bot', `Nomor: ${sock.user?.id?.split(':')[0] || 'Unknown'}`);
+            colors.logger.info('Bot', `Nomor: ${botNumber || 'Unknown'}`);
             console.log('');
         }
         
@@ -271,11 +281,17 @@ async function startConnection(options = {}) {
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
         if (type !== 'notify') return;
         
+        // Wait for connection to be ready
+        if (!connectionState.isReady) {
+            colors.logger.debug('Skip', 'Connection not ready yet');
+            return;
+        }
+        
         for (const msg of messages) {
             if (!msg.message) continue;
             
             // Filter non-user messages
-            const jid = msg.key.remoteJid || '';
+            let jid = msg.key.remoteJid || '';
             
             // Skip status broadcast
             if (jid === 'status@broadcast') continue;
@@ -286,10 +302,16 @@ async function startConnection(options = {}) {
                 continue;
             }
             
-            // Skip lid messages (legacy)
-            if (jid.endsWith('@lid')) {
-                colors.logger.debug('Skip', 'LID message filtered');
-                continue;
+            // Convert LID to standard JID
+            if (isLid(jid)) {
+                jid = lidToJid(jid);
+                msg.key.remoteJid = jid;
+                colors.logger.debug('LID', `Converted remoteJid to ${jid}`);
+            }
+            
+            // Convert participant LID if exists
+            if (msg.key.participant && isLid(msg.key.participant)) {
+                msg.key.participant = lidToJid(msg.key.participant);
             }
             
             // Skip broadcast lists
