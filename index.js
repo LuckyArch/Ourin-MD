@@ -13,6 +13,7 @@ const { messageHandler, groupHandler } = require('./src/handler');
 const { loadPlugins, pluginStore } = require('./src/lib/plugins');
 const { initDatabase } = require('./src/lib/database');
 const { initScheduler, loadScheduledMessages } = require('./src/lib/scheduler');
+const { startAutoBackup } = require('./src/lib/backup');
 const { 
     logger, 
     c, 
@@ -158,6 +159,11 @@ async function main() {
     const dbPath = path.join(process.cwd(), config.database?.path || './src/database');
     await initDatabase(dbPath);
     logger.success('Database ready!');
+    
+    // Start auto backup
+    if (config.backup?.enabled !== false) {
+        startAutoBackup(dbPath);
+    }
     
     // Load plugins
     logger.info('Loading plugins...');

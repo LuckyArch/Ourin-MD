@@ -1,279 +1,315 @@
-# 🤖 OurinAI - WhatsApp Bot
+# OurinAI - WhatsApp Bot
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/versi-1.2.0-blue.svg" alt="Versi">
   <img src="https://img.shields.io/badge/node-%3E%3D18.0.0-green.svg" alt="Node">
-  <img src="https://img.shields.io/badge/license-ISC-yellow.svg" alt="License">
+  <img src="https://img.shields.io/badge/lisensi-ISC-yellow.svg" alt="Lisensi">
 </p>
 
-<p align="center">
-  <b>Bot WhatsApp Multi-Device dengan sistem plugin modular</b><br>
-  Dibuat dengan ❤️ oleh Lucky Archz
-</p>
+Halo! Selamat datang di OurinAI, sebuah bot WhatsApp yang dibangun dengan penuh cinta menggunakan Node.js. Bot ini dirancang untuk memudahkan kamu dalam mengelola WhatsApp, baik untuk keperluan pribadi maupun grup.
+
+Apa yang membuat OurinAI spesial? Bot ini menggunakan sistem plugin yang modular, artinya kamu bisa dengan mudah menambah atau menghapus fitur sesuai kebutuhan. Tidak perlu jadi programmer handal untuk menggunakannya!
 
 ---
 
-## 📖 Daftar Isi
+## Daftar Isi
 
-1. [Apa itu OurinAI?](#-apa-itu-ourinai)
-2. [Fitur Unggulan](#-fitur-unggulan)
-3. [Persyaratan Sistem](#-persyaratan-sistem)
-4. [Panduan Instalasi](#-panduan-instalasi)
-5. [Konfigurasi Bot](#-konfigurasi-bot)
-6. [Cara Menjalankan Bot](#-cara-menjalankan-bot)
-7. [Daftar Command](#-daftar-command)
-8. [Cara Membuat Plugin](#-cara-membuat-plugin)
-9. [Struktur Folder](#-struktur-folder)
-10. [Troubleshooting](#-troubleshooting)
-11. [FAQ](#-faq)
+Sebelum mulai, ini dia peta navigasi untuk membantu kamu menemukan informasi yang dibutuhkan:
 
----
-
-## 🤔 Apa itu OurinAI?
-
-**OurinAI** adalah bot WhatsApp yang berjalan di komputer/server kamu dan terhubung ke nomor WhatsApp kamu. Bot ini bisa:
-
-- Merespon pesan secara otomatis
-- Membuat sticker dari gambar/video
-- Mengirim pesan terjadwal
-- Mengelola grup WhatsApp
-- Dan masih banyak lagi!
-
-**Penting untuk diketahui:**
-- Bot ini menggunakan nomor WhatsApp kamu sendiri
-- Nomor yang digunakan akan menjadi "bot" yang merespon pesan
-- Bisa dijalankan 24/7 di server/VPS atau komputer yang menyala terus
+1. [Kenapa Harus OurinAI?](#kenapa-harus-ourinai)
+2. [Apa Saja Fiturnya?](#apa-saja-fiturnya)
+3. [Sebelum Memulai](#sebelum-memulai)
+4. [Cara Instalasi](#cara-instalasi)
+5. [Mengatur Bot](#mengatur-bot)
+6. [Menjalankan Bot](#menjalankan-bot)
+7. [Daftar Perintah](#daftar-perintah)
+8. [Membuat Plugin Sendiri](#membuat-plugin-sendiri)
+9. [Struktur Folder](#struktur-folder)
+10. [Kalau Ada Masalah](#kalau-ada-masalah)
+11. [Pertanyaan Umum](#pertanyaan-umum)
 
 ---
 
-## ✨ Fitur Unggulan
+## Kenapa Harus OurinAI?
 
-### 🔌 Multi-Device Support
-Bot ini menggunakan teknologi WhatsApp Multi-Device, artinya:
-- Tidak perlu scan QR berulang kali
-- Tetap terhubung walaupun HP mati
-- Sesi tersimpan di folder `sessions/`
+Mungkin kamu bertanya-tanya, kenapa harus pakai OurinAI? Kan banyak bot WhatsApp lain di luar sana. Nah, ini beberapa alasannya:
 
-### 🧩 Sistem Plugin Modular
-- Setiap command adalah file terpisah
-- Mudah menambah/menghapus fitur
-- Hot-reload: edit plugin tanpa restart bot
+**Mudah Digunakan**
+Tidak perlu gelar IT untuk menjalankan bot ini. Cukup ikuti panduan ini step by step, dalam hitungan menit bot kamu sudah jalan.
 
-### 💾 Database LowDB
-- Menyimpan data user, grup, dan pengaturan
-- Realtime sync (langsung tersimpan)
-- Format JSON yang mudah dibaca
+**Modular dan Fleksibel**
+Setiap fitur adalah file terpisah yang disebut "plugin". Mau tambah fitur? Tinggal buat file baru. Mau hapus? Tinggal delete filenya. Simpel!
 
-### 🔒 Sistem Permission
-- **Owner**: Akses penuh ke semua fitur
-- **Premium**: Limit lebih tinggi, fitur eksklusif
-- **Banned**: Tidak bisa menggunakan bot
+**Stabil dan Teruji**
+OurinAI menggunakan library Baileys yang sudah teruji dan digunakan banyak developer. Ditambah sistem auto-reconnect, bot kamu tidak akan mudah mati.
 
-### ⏰ Scheduler (Penjadwalan)
-- Reset limit harian otomatis jam 00:00
-- Kirim pesan terjadwal ke siapa saja
-- Bisa repeat harian
-
-### 🖼️ Sticker Maker
-- Convert gambar ke sticker
-- Convert video ke sticker animasi
-- Custom packname dan author
-- Tidak crop (gambar utuh)
+**Gratis dan Open Source**
+Tidak ada biaya tersembunyi. Kode sumbernya terbuka, kamu bisa modifikasi sesuka hati.
 
 ---
 
-## 💻 Persyaratan Sistem
+## Apa Saja Fiturnya?
 
-### Wajib Ada:
-| Software | Versi Minimum | Cara Cek |
-|----------|---------------|----------|
-| Node.js | 18.0.0 atau lebih baru | `node --version` |
-| NPM | 8.0.0 atau lebih baru | `npm --version` |
-| Git | Versi apapun | `git --version` |
+### Fitur Inti
 
-### Opsional (Sudah Di-handle Bot):
-- FFmpeg untuk convert video (auto-install)
-- Sharp untuk manipulasi gambar (auto-install)
+**Multi-Device Support**
+Bot ini menggunakan teknologi WhatsApp Multi-Device. Apa artinya? Artinya bot tetap jalan meskipun HP kamu mati atau tidak ada koneksi internet. Sesi tersimpan di server/komputer, bukan di HP.
 
-### Sistem Operasi:
-- ✅ Windows 10/11
-- ✅ Linux (Ubuntu, Debian, CentOS)
-- ✅ macOS
-- ✅ Termux (Android)
-- ✅ VPS/Server
+**Sistem Plugin Modular**
+Setiap command adalah file JavaScript terpisah di folder `plugins/`. Kamu bisa mengedit, menambah, atau menghapus plugin tanpa harus restart bot. Keren kan?
 
-### Spesifikasi Minimum:
-- RAM: 512 MB (1 GB recommended)
-- Storage: 500 MB free space
-- Internet: Stabil
+**Database Otomatis**
+OurinAI menggunakan LowDB untuk menyimpan data. Setiap perubahan langsung tersimpan secara otomatis. Data user, grup, pengaturan, semuanya aman.
+
+**Auto Backup**
+Takut data hilang? Tenang, bot ini backup database secara otomatis setiap 24 jam. Backup lama dihapus otomatis setelah 7 hari untuk menghemat ruang.
+
+**Auto Reconnect**
+Kalau koneksi terputus (misalnya internet mati sebentar), bot akan otomatis mencoba menyambung kembali. Tidak perlu restart manual.
+
+### Fitur Grup
+
+**Welcome Message**
+Ketika ada member baru masuk grup, bot akan menyapa mereka dengan pesan selamat datang yang heboh. Bisa diaktifkan atau dinonaktifkan per grup.
+
+**Goodbye Message**
+Ketika ada member yang keluar, bot akan mengirim pesan perpisahan. Sama seperti welcome, bisa di-toggle.
+
+### Sistem Keamanan
+
+**Mode Self dan Public**
+Ada dua mode operasi:
+- **Public**: Semua orang bisa pakai bot
+- **Self**: Hanya kamu (pemilik nomor) yang bisa pakai
+
+**Anti-Spam**
+Bot otomatis mendeteksi spam dan mengabaikannya. Tidak perlu khawatir bot kamu di-abuse.
+
+**Anti-Call**
+Ada yang iseng nelpon? Bot otomatis menolak dan mengirim pesan bahwa bot tidak menerima panggilan.
+
+### Fitur Tambahan
+
+**Sticker Maker**
+Kirim gambar atau video dengan caption `.sticker`, jadilah sticker! Tidak di-crop, gambar utuh.
+
+**Daily Limit Reset**
+Setiap user punya limit harian untuk mencegah abuse. Limit reset otomatis jam 00:00.
+
+**Scheduled Messages**
+Mau kirim pesan jam tertentu? Bisa! Bahkan bisa diatur repeat harian.
 
 ---
 
-## 📥 Panduan Instalasi
+## Sebelum Memulai
+
+Sebelum kita mulai instalasi, pastikan komputer atau server kamu sudah memenuhi persyaratan berikut.
+
+### Yang Wajib Ada
+
+**Node.js versi 18 atau lebih baru**
+Node.js adalah "mesin" yang menjalankan bot ini. Tanpa Node.js, bot tidak bisa jalan.
+
+Cara cek apakah sudah terinstall:
+```bash
+node --version
+```
+Hasilnya harus v18.0.0 atau lebih tinggi.
+
+**NPM (Node Package Manager)**
+NPM biasanya sudah terinstall otomatis bersama Node.js. NPM digunakan untuk menginstall library yang dibutuhkan bot.
+
+Cara cek:
+```bash
+npm --version
+```
+
+**Git (Opsional tapi Disarankan)**
+Git digunakan untuk mendownload dan mengupdate bot. Sebenarnya bisa juga download manual, tapi dengan Git lebih mudah.
+
+Cara cek:
+```bash
+git --version
+```
+
+### Spesifikasi Komputer
+
+Bot ini cukup ringan, tapi tetap ada minimum spesifikasi:
+
+- RAM: Minimal 512 MB (1 GB lebih baik)
+- Storage: Minimal 500 MB ruang kosong
+- Internet: Harus stabil, upload 1 Mbps cukup
+- OS: Windows 10/11, Linux (Ubuntu/Debian), macOS, bahkan Android (Termux)
+
+---
+
+## Cara Instalasi
+
+Oke, mari kita mulai! Ikuti langkah-langkah berikut dengan teliti.
 
 ### Langkah 1: Install Node.js
 
-**Windows:**
-1. Buka https://nodejs.org/
-2. Download versi "LTS" (yang warna hijau)
-3. Jalankan installer, klik Next sampai selesai
-4. Buka Command Prompt, ketik `node --version`
-5. Jika muncul versi (misal v18.17.0), berarti sukses
+**Untuk Pengguna Windows**
 
-**Linux/Ubuntu:**
+1. Buka browser, pergi ke https://nodejs.org/
+2. Kamu akan lihat dua tombol download. Pilih yang bertuliskan "LTS" (biasanya warna hijau) karena ini versi stabil
+3. Setelah download selesai, buka file installer-nya
+4. Klik Next, Next, Next sampai selesai (biarkan default)
+5. Buka Command Prompt (tekan Windows + R, ketik `cmd`, Enter)
+6. Ketik `node --version` dan tekan Enter
+7. Kalau muncul versi seperti `v18.17.0`, berarti berhasil!
+
+**Untuk Pengguna Linux (Ubuntu/Debian)**
+
+Buka terminal dan jalankan perintah berikut:
+
 ```bash
-# Update package list
-sudo apt update
-
-# Install Node.js 18
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt install -y nodejs
+```
 
-# Cek versi
+Tunggu prosesnya selesai, lalu cek dengan:
+```bash
 node --version
 npm --version
 ```
 
-**Termux (Android):**
+**Untuk Pengguna Termux (Android)**
+
 ```bash
-pkg update
+pkg update && pkg upgrade
 pkg install nodejs git
 ```
 
----
-
 ### Langkah 2: Download OurinAI
 
-**Cara 1: Menggunakan Git (Recommended)**
-```bash
-# Clone repository
-git clone https://github.com/LuckyArchz/Ourin-MD.git
+**Cara 1: Menggunakan Git (Disarankan)**
 
-# Masuk ke folder
+Buka terminal atau Command Prompt, lalu jalankan:
+
+```bash
+git clone https://github.com/LuckyArchz/Ourin-MD.git
+```
+
+Perintah ini akan membuat folder baru bernama `Ourin-MD` yang berisi semua file bot.
+
+Setelah selesai, masuk ke folder:
+```bash
 cd Ourin-MD
 ```
 
-**Cara 2: Download ZIP**
-1. Buka https://github.com/LuckyArchz/Ourin-MD
-2. Klik tombol hijau "Code"
-3. Pilih "Download ZIP"
-4. Extract ke folder pilihan kamu
-5. Buka terminal/command prompt di folder tersebut
+**Cara 2: Download Manual**
 
----
+Kalau tidak mau pakai Git, bisa download manual:
+
+1. Buka https://github.com/LuckyArchz/Ourin-MD
+2. Klik tombol hijau "Code" di pojok kanan atas
+3. Pilih "Download ZIP"
+4. Extract file ZIP tersebut
+5. Buka terminal di folder hasil extract
 
 ### Langkah 3: Install Dependencies
 
-Dependencies adalah package/library yang dibutuhkan bot untuk berjalan.
+Dependencies adalah library-library yang dibutuhkan bot untuk berjalan. Ini seperti bahan-bahan yang diperlukan untuk memasak.
+
+Jalankan perintah berikut di dalam folder Ourin-MD:
 
 ```bash
-# Install semua dependencies
 npm install
 ```
 
-**Apa yang di-install?**
-- `@rexxhayanasi/elaina-baileys` - Library WhatsApp
-- `lowdb` - Database
-- `node-webpmux` - Manipulasi sticker
-- `fluent-ffmpeg` - Convert video
-- `@ffmpeg-installer/ffmpeg` - FFmpeg binary
-- `sharp` - Manipulasi gambar
-- `axios` - HTTP requests
-- `pino` - Logger
-- Dan lainnya...
+Proses ini akan menginstall sekitar 50+ package. Biasanya memakan waktu 2-5 menit tergantung kecepatan internet kamu.
 
-**Catatan:** Proses ini bisa memakan waktu 2-5 menit tergantung koneksi internet.
+Kalau muncul warning berwarna kuning, biasanya tidak apa-apa. Yang penting tidak ada error berwarna merah.
 
 ---
 
-### Langkah 4: Konfigurasi Bot
+## Mengatur Bot
 
-Buka file `config.js` dan edit bagian-bagian penting:
+Sekarang bagian yang sangat penting: mengatur konfigurasi bot.
 
-```javascript
-// Informasi Owner - WAJIB DIISI!
-owner: {
-    name: 'Nama Kamu',
-    number: ['628xxxxxxxxxx'],  // Ganti dengan nomor WhatsApp kamu
-                                // Format: 628 (Indonesia) + nomor tanpa 0
-                                // Contoh: 6281234567890
-}
-```
+Buka file `config.js` menggunakan text editor apapun (Notepad, VS Code, dll).
 
-**Format Nomor:**
-- ❌ 081234567890 (salah)
-- ❌ +6281234567890 (salah)
-- ✅ 6281234567890 (benar)
+### Yang Wajib Diubah
 
----
+**Nomor Owner**
 
-## ⚙️ Konfigurasi Bot
-
-File `config.js` berisi semua pengaturan bot. Berikut penjelasan lengkapnya:
-
-### Informasi Bot
-```javascript
-bot: {
-    name: 'Ourin-AI',           // Nama bot yang tampil di menu
-    version: '1.1.0',           // Versi bot
-    description: 'WhatsApp Bot', // Deskripsi bot
-    developer: 'Lucky Archz',   // Nama developer
-}
-```
-
-### Informasi Owner
+Cari bagian ini:
 ```javascript
 owner: {
     name: 'Owner',
-    number: ['628xxx', '628yyy'], // Bisa lebih dari 1 nomor
+    number: ['628xxxxxxxxxx']
 }
 ```
 
-### Pengaturan Command
+Ganti `628xxxxxxxxxx` dengan nomor WhatsApp kamu. Format nomor:
+- Diawali dengan kode negara (62 untuk Indonesia)
+- Tidak pakai tanda + atau 0 di depan
+- Contoh: `6281234567890`
+
+Kalau mau lebih dari satu owner:
+```javascript
+number: ['6281234567890', '6289876543210']
+```
+
+**Mode Bot**
+
+Cari bagian ini:
+```javascript
+mode: 'public'
+```
+
+Pilihan:
+- `'public'` = Semua orang bisa pakai bot
+- `'self'` = Hanya kamu yang bisa pakai
+
+Untuk testing awal, disarankan pakai `'self'` dulu.
+
+### Yang Bisa Diubah (Opsional)
+
+**Nama Bot**
+```javascript
+bot: {
+    name: 'Ourin-AI'
+}
+```
+
+**Prefix Command**
 ```javascript
 command: {
-    prefix: '.',                // Karakter awalan command (.menu, .ping)
-    multiPrefix: false,         // Boleh pakai prefix lain (!, #, dll)
+    prefix: '.'
 }
 ```
+Ubah ke `'!'` kalau mau command jadi `!menu`, `!ping`, dll.
 
-### Mode Bot
-```javascript
-mode: 'public',
-// Pilihan:
-// 'public'  = Semua orang bisa pakai
-// 'self'    = Hanya bot sendiri
-// 'group'   = Hanya di grup
-// 'private' = Hanya di chat pribadi
-```
-
-### Limit Harian
+**Limit Harian**
 ```javascript
 limits: {
-    defaultLimit: 25,    // Limit untuk user biasa
-    premiumLimit: 100,   // Limit untuk premium
-    ownerLimit: -1,      // -1 = unlimited
+    default: 25,
+    premium: 100,
+    owner: -1
 }
 ```
 
-### Fitur Toggle
+**Sticker Metadata**
 ```javascript
-features: {
-    antiSpam: true,          // Blokir spam
-    antiCall: true,          // Tolak panggilan
-    autoRead: true,          // Auto read pesan
-    autoTyping: true,        // Tampilkan "mengetik..."
-    welcomeMessage: true,    // Pesan welcome di grup
-    leaveMessage: true,      // Pesan saat keluar grup
-    dailyLimitReset: true,   // Reset limit jam 00:00
+sticker: {
+    packname: 'Ourin-AI',
+    author: 'Bot'
 }
 ```
+
+Setelah selesai mengedit, simpan file (`Ctrl + S`).
 
 ---
 
-## 🚀 Cara Menjalankan Bot
+## Menjalankan Bot
 
-### Langkah 1: Start Bot
+Akhirnya kita sampai di tahap yang ditunggu-tunggu!
+
+### Start Bot
+
+Jalankan perintah berikut:
 ```bash
 npm start
 ```
@@ -284,9 +320,10 @@ atau
 node index.js
 ```
 
-### Langkah 2: Pairing Code
+### Proses Pairing
 
-Saat pertama kali, bot akan menampilkan:
+Karena ini pertama kali, bot perlu dipasangkan dengan WhatsApp kamu. Kamu akan melihat kode pairing di terminal seperti ini:
+
 ```
 ╔════════════════════════════════════╗
 ║         PAIRING CODE               ║
@@ -296,375 +333,290 @@ Saat pertama kali, bot akan menampilkan:
 ╚════════════════════════════════════╝
 ```
 
-**Cara memasukkan pairing code:**
-1. Buka WhatsApp di HP
-2. Ketuk titik tiga (⋮) di pojok kanan atas
-3. Pilih "Perangkat tertaut"
-4. Ketuk "Tautkan perangkat"
-5. Pilih "Tautkan dengan nomor telepon"
-6. Masukkan pairing code (misal: 1234-5678)
+Sekarang buka WhatsApp di HP:
 
-### Langkah 3: Bot Siap!
+1. Ketuk ikon titik tiga (⋮) di pojok kanan atas
+2. Pilih "Perangkat tertaut" atau "Linked Devices"
+3. Ketuk "Tautkan perangkat" atau "Link a Device"
+4. Pilih "Tautkan dengan nomor telepon" atau "Link with Phone Number"
+5. Masukkan kode pairing yang muncul di terminal
 
-Jika berhasil, akan muncul:
+Tunggu beberapa detik...
+
+### Berhasil!
+
+Kalau berhasil, di terminal akan muncul:
 ```
 ✓ Terhubung ke WhatsApp!
 ✓ Bot: Ourin-AI
-✓ Nomor: 628xxxxxxxxxx
 ✓ Ready to receive messages!
 ```
 
-Sekarang coba kirim `.ping` ke bot!
+Selamat! Bot kamu sudah jalan!
+
+Coba kirim `.ping` ke nomor bot untuk memastikan semuanya berjalan lancar.
 
 ---
 
-## 📋 Daftar Command
+## Daftar Perintah
 
-### Command Utama
+Berikut daftar lengkap perintah yang tersedia di OurinAI.
 
-| Command | Alias | Deskripsi |
-|---------|-------|-----------|
-| `.menu` | `.help` | Menampilkan daftar semua command |
-| `.ping` | `.p` | Cek apakah bot online dan response time |
-| `.runtime` | `.uptime` | Lihat berapa lama bot sudah berjalan |
-| `.infobot` | `.botinfo` | Informasi tentang bot |
+### Perintah Utama
 
-### Command Owner (Khusus Owner)
+| Perintah | Kegunaan |
+|----------|----------|
+| `.menu` | Menampilkan daftar semua perintah yang tersedia |
+| `.ping` | Mengecek apakah bot masih aktif dan berapa response time-nya |
+| `.runtime` | Melihat sudah berapa lama bot berjalan tanpa restart |
+| `.infobot` | Menampilkan informasi detail tentang bot |
 
-| Command | Deskripsi |
-|---------|-----------|
-| `.self on` | Aktifkan self mode (hanya bot yang bisa pakai) |
-| `.self off` | Nonaktifkan self mode |
-| `.setmode <mode>` | Ubah mode bot (public/self/group/private) |
-| `.broadcast <text>` | Kirim pesan ke semua chat |
-| `.listowner` | Lihat daftar owner |
-| `.listprem` | Lihat daftar premium user |
+### Perintah Owner
 
-### Command Scheduler (Penjadwalan)
+Perintah ini hanya bisa digunakan oleh owner yang terdaftar di config.
 
-| Command | Deskripsi |
-|---------|-----------|
-| `.schedule add <HH:MM> <jid> <pesan>` | Tambah pesan terjadwal |
-| `.schedule add <HH:MM> <jid> repeat <pesan>` | Pesan berulang harian |
-| `.schedule list` | Lihat semua jadwal |
-| `.schedule del <id>` | Hapus jadwal |
-| `.schedule status` | Lihat status scheduler |
+| Perintah | Kegunaan |
+|----------|----------|
+| `.self on` | Mengaktifkan mode self (hanya owner yang bisa pakai) |
+| `.self off` | Menonaktifkan mode self (semua bisa pakai) |
+| `.broadcast teks` | Mengirim pesan ke semua chat |
+| `.listowner` | Melihat daftar owner yang terdaftar |
+| `.listprem` | Melihat daftar user premium |
 
-**Contoh penggunaan:**
-```
-.schedule add 08:00 6281234567890@s.whatsapp.net Selamat pagi!
-.schedule add 12:00 here repeat Sudah siang!
-```
+### Perintah Scheduler
 
-### Command Utility
+| Perintah | Kegunaan |
+|----------|----------|
+| `.schedule add 08:00 nomor Pesan` | Menambah pesan terjadwal |
+| `.schedule list` | Melihat semua jadwal yang aktif |
+| `.schedule del id` | Menghapus jadwal tertentu |
+| `.schedule status` | Melihat status scheduler |
 
-| Command | Deskripsi |
-|---------|-----------|
-| `.sticker` | Reply gambar/video untuk buat sticker |
-| `.profile` | Lihat profile user |
+### Perintah Grup
 
-### Command Fun
+| Perintah | Kegunaan |
+|----------|----------|
+| `.welcome on` | Mengaktifkan pesan selamat datang |
+| `.welcome off` | Menonaktifkan pesan selamat datang |
+| `.goodbye on` | Mengaktifkan pesan perpisahan |
+| `.goodbye off` | Menonaktifkan pesan perpisahan |
 
-| Command | Deskripsi |
-|---------|-----------|
-| `.dice` | Lempar dadu (1-6) |
-| `.flip` | Lempar koin (heads/tails) |
+### Perintah Utility
+
+| Perintah | Kegunaan |
+|----------|----------|
+| `.sticker` | Mengubah gambar atau video menjadi sticker |
+| `.profile` | Melihat informasi profile user |
+
+### Perintah Fun
+
+| Perintah | Kegunaan |
+|----------|----------|
+| `.dice` | Melempar dadu virtual (hasil 1-6) |
+| `.flip` | Melempar koin virtual (heads atau tails) |
 
 ---
 
-## 🔧 Cara Membuat Plugin
+## Membuat Plugin Sendiri
 
-Plugin adalah file JavaScript yang berisi 1 command. Semua plugin ada di folder `plugins/`.
+Salah satu kelebihan OurinAI adalah kemudahan dalam membuat plugin. Kamu tidak perlu jadi programmer handal untuk ini!
+
+### Konsep Dasar
+
+Plugin adalah file JavaScript yang berisi satu command. File ini disimpan di folder `plugins/` dan dikelompokkan berdasarkan kategori (main, owner, utility, fun, dll).
 
 ### Struktur Plugin
 
+Setiap plugin punya dua bagian utama:
+1. **Config**: Pengaturan plugin (nama, deskripsi, permission, dll)
+2. **Handler**: Fungsi yang dijalankan ketika command dipanggil
+
+### Contoh Plugin Sederhana
+
+Buat file baru `plugins/fun/sapa.js`:
+
 ```javascript
-// plugins/kategori/namacommand.js
-
-// 1. Konfigurasi Plugin
 const pluginConfig = {
-    name: 'hello',              // Nama command (wajib)
-    alias: ['hi', 'hey'],       // Nama alternatif
-    category: 'fun',            // Kategori di menu
-    description: 'Sapa bot',    // Deskripsi
-    usage: '.hello [nama]',     // Cara pakai
-    example: '.hello John',     // Contoh
-    isOwner: false,             // true = khusus owner
-    isPremium: false,           // true = khusus premium
-    isGroup: false,             // true = hanya di grup
-    isPrivate: false,           // true = hanya di private
-    cooldown: 5,                // Jeda antar penggunaan (detik)
-    limit: 1,                   // Berapa limit yang dikurangi
-    isEnabled: true,            // false = command nonaktif
-};
-
-// 2. Handler (yang dijalankan saat command dipanggil)
-async function handler(m, { sock, args, config }) {
-    // m = message object
-    // sock = socket WhatsApp
-    // args = argumen setelah command
-    // config = konfigurasi bot
-    
-    const nama = args[0] || m.pushName;
-    await m.reply(`Halo, ${nama}! 👋`);
+    name: 'sapa',
+    alias: ['hi', 'hello'],
+    category: 'fun',
+    description: 'Menyapa bot',
+    usage: '.sapa',
+    isOwner: false,
+    cooldown: 5,
+    limit: 1,
+    isEnabled: true
 }
 
-// 3. Export
+async function handler(m) {
+    const responses = [
+        'Halo! Apa kabar?',
+        'Hai! Senang bertemu denganmu!',
+        'Yoo! Ada yang bisa dibantu?'
+    ]
+    
+    const randomResponse = responses[Math.floor(Math.random() * responses.length)]
+    await m.reply(randomResponse)
+}
+
 module.exports = {
     config: pluginConfig,
     handler
-};
-```
-
-### Contoh-contoh Plugin
-
-**1. Plugin Sederhana (Reply Text)**
-```javascript
-// plugins/fun/sapa.js
-const pluginConfig = {
-    name: 'sapa',
-    alias: ['hi'],
-    category: 'fun',
-    description: 'Sapa bot',
-    isEnabled: true
-};
-
-async function handler(m) {
-    await m.reply('Halo! Apa kabar? 😊');
 }
-
-module.exports = { config: pluginConfig, handler };
 ```
 
-**2. Plugin dengan Argumen**
-```javascript
-// plugins/fun/say.js
-const pluginConfig = {
-    name: 'say',
-    description: 'Bot mengulang kata kamu',
-    usage: '.say <text>',
-    isEnabled: true
-};
+Simpan, dan plugin langsung aktif! Coba kirim `.sapa` ke bot.
 
-async function handler(m, { args }) {
-    const text = args.join(' ');
-    
-    if (!text) {
-        await m.reply('Tulis sesuatu! Contoh: .say Hello World');
-        return;
-    }
-    
-    await m.reply(text);
-}
+### Penjelasan Config
 
-module.exports = { config: pluginConfig, handler };
-```
-
-**3. Plugin dengan Gambar**
-```javascript
-// plugins/fun/gambar.js
-const pluginConfig = {
-    name: 'gambar',
-    description: 'Kirim gambar random',
-    isEnabled: true
-};
-
-async function handler(m, { sock }) {
-    await sock.sendMessage(m.chat, {
-        image: { url: 'https://picsum.photos/500' },
-        caption: 'Ini gambar random!'
-    });
-}
-
-module.exports = { config: pluginConfig, handler };
-```
+| Property | Tipe | Keterangan |
+|----------|------|------------|
+| `name` | String | Nama command utama |
+| `alias` | Array | Nama alternatif untuk command |
+| `category` | String | Kategori di menu |
+| `description` | String | Deskripsi singkat |
+| `usage` | String | Cara penggunaan |
+| `isOwner` | Boolean | True jika khusus owner |
+| `cooldown` | Number | Jeda antar penggunaan (detik) |
+| `limit` | Number | Berapa limit yang dikurangi |
+| `isEnabled` | Boolean | True untuk mengaktifkan |
 
 ---
 
-## 📁 Struktur Folder
+## Struktur Folder
+
+Berikut penjelasan setiap folder dan file penting:
 
 ```
 Ourin-MD/
 │
-├── 📄 index.js              # File utama (entry point)
-├── 📄 config.js             # Semua konfigurasi bot
-├── 📄 package.json          # Info project & dependencies
-├── 📄 CHANGELOG.md          # Riwayat perubahan
-├── 📄 README.md             # Dokumentasi (file ini)
+├── index.js           # File utama yang dijalankan
+├── config.js          # Semua pengaturan bot
+├── package.json       # Info project dan dependencies
+├── CHANGELOG.md       # Catatan perubahan setiap versi
+├── README.md          # Dokumentasi (file ini)
 │
-├── 📁 src/                  # Source code utama
-│   ├── 📄 connection.js     # Koneksi ke WhatsApp
-│   ├── 📄 handler.js        # Handler pesan masuk
+├── src/
+│   ├── connection.js  # Kode untuk koneksi WhatsApp
+│   ├── handler.js     # Handler untuk pesan masuk
 │   │
-│   ├── 📁 lib/              # Library/helper
-│   │   ├── 📄 colors.js     # Warna & logger di console
-│   │   ├── 📄 database.js   # Database LowDB
-│   │   ├── 📄 exif.js       # EXIF sticker
-│   │   ├── 📄 formatter.js  # Format pesan
-│   │   ├── 📄 functions.js  # Fungsi umum
-│   │   ├── 📄 lidHelper.js  # Konversi LID
-│   │   ├── 📄 message.js    # Utilitas pesan
-│   │   ├── 📄 plugins.js    # Loader plugin
-│   │   ├── 📄 scheduler.js  # Penjadwalan
-│   │   ├── 📄 serialize.js  # Serializer pesan
-│   │   └── 📄 sockHelper.js # Helper socket
-│   │
-│   └── 📁 database/         # Data tersimpan
-│       └── 📄 db.json       # File database utama
+│   └── lib/
+│       ├── backup.js      # Sistem backup otomatis
+│       ├── colors.js      # Logger dan warna console
+│       ├── database.js    # Database LowDB
+│       ├── exif.js        # Metadata sticker
+│       ├── lidHelper.js   # Bantuan konversi LID
+│       ├── plugins.js     # Loader plugin
+│       ├── reconnect.js   # Sistem auto reconnect
+│       ├── scheduler.js   # Penjadwalan
+│       └── serialize.js   # Serializer pesan
 │
-├── 📁 plugins/              # Semua command/plugin
-│   ├── 📁 main/             # Command utama
-│   │   ├── 📄 menu.js
-│   │   ├── 📄 ping.js
-│   │   └── ...
-│   ├── 📁 owner/            # Command owner
-│   │   ├── 📄 self.js
-│   │   ├── 📄 schedule.js
-│   │   └── ...
-│   ├── 📁 utility/          # Command utility
-│   │   ├── 📄 sticker.js
-│   │   └── ...
-│   └── 📁 fun/              # Command fun
-│       ├── 📄 dice.js
-│       └── ...
+├── plugins/
+│   ├── main/          # Command utama
+│   ├── owner/         # Command khusus owner
+│   ├── utility/       # Command utility
+│   ├── group/         # Command grup
+│   └── fun/           # Command hiburan
 │
-├── 📁 sessions/             # Data sesi WhatsApp
-│   └── 📄 creds.json        # Credentials (JANGAN SHARE!)
-│
-└── 📁 tmp/                  # File temporary
-    └── ...
+├── sessions/          # Data sesi WhatsApp
+├── backups/           # Backup database
+└── tmp/               # File temporary
 ```
 
 ---
 
-## 🔧 Troubleshooting
+## Kalau Ada Masalah
+
+Kadang ada masalah yang muncul. Berikut beberapa masalah umum dan cara mengatasinya.
 
 ### Bot tidak merespon setelah pairing
 
-**Penyebab:** Sesi belum tersimpan dengan benar.
+Ini masalah yang paling sering terjadi. Penyebabnya biasanya sesi yang corrupt.
 
-**Solusi:**
-1. Hentikan bot (Ctrl+C)
+Solusi:
+1. Stop bot (tekan `Ctrl + C`)
 2. Hapus folder `sessions/`
-3. Jalankan ulang `npm start`
-4. Pairing ulang
-
----
+3. Jalankan lagi `npm start`
+4. Lakukan pairing ulang
 
 ### Error "Module not found"
 
-**Penyebab:** Dependencies belum terinstall.
+Ini berarti ada dependency yang belum terinstall.
 
-**Solusi:**
+Solusi:
 ```bash
 npm install
 ```
 
----
+### Error "ECONNREFUSED"
 
-### Error "ECONNREFUSED" atau tidak bisa connect
+Ini masalah koneksi internet atau server WhatsApp sedang maintenance.
 
-**Penyebab:** Masalah koneksi internet atau WhatsApp server.
-
-**Solusi:**
+Solusi:
 1. Cek koneksi internet
-2. Tunggu beberapa menit, coba lagi
-3. Hapus folder `sessions/` dan pairing ulang
-
----
+2. Tunggu beberapa menit
+3. Coba jalankan ulang
 
 ### Bot crash terus-menerus
 
-**Penyebab:** Memory penuh atau error di plugin.
+Kemungkinan ada plugin yang error atau memory penuh.
 
-**Solusi:**
-1. Cek log error
-2. Nonaktifkan plugin bermasalah
+Solusi:
+1. Cek log error untuk mengetahui plugin mana yang bermasalah
+2. Hapus atau perbaiki plugin tersebut
 3. Restart bot
 
----
+### Sticker tidak jadi
 
-### Sticker gagal dibuat
+Ini biasanya masalah FFmpeg.
 
-**Penyebab:** FFmpeg tidak terinstall atau gambar corrupt.
-
-**Solusi:**
+Solusi:
 ```bash
-# Reinstall ffmpeg
 npm uninstall @ffmpeg-installer/ffmpeg
 npm install @ffmpeg-installer/ffmpeg
 ```
 
 ---
 
-## ❓ FAQ
+## Pertanyaan Umum
 
-### Q: Apakah aman menggunakan bot ini?
-**A:** Ya, selama kamu tidak membagikan folder `sessions/` ke orang lain. Folder tersebut berisi kredensial WhatsApp kamu.
+**Apakah bot ini aman?**
+Selama kamu tidak membagikan folder `sessions/` ke orang lain, bot ini aman. Folder tersebut berisi kredensial WhatsApp kamu.
 
-### Q: Apakah bisa banned?
-**A:** Bisa, jika kamu menggunakan bot untuk spam atau melanggar ToS WhatsApp. Gunakan dengan bijak!
+**Apakah bisa kena banned?**
+Bisa, kalau kamu menggunakan bot untuk spam atau melanggar ketentuan WhatsApp. Gunakan dengan bijak!
 
-### Q: Bagaimana cara update bot?
-**A:** 
+**Bagaimana cara update bot?**
 ```bash
 git pull origin main
 npm install
 npm start
 ```
 
-### Q: Bisa jalan di HP?
-**A:** Bisa, menggunakan Termux. Tapi disarankan menggunakan VPS untuk performa lebih baik.
+**Bisa jalan di HP langsung?**
+Bisa, menggunakan Termux di Android. Tapi untuk performa terbaik, gunakan VPS atau komputer.
 
-### Q: Limit itu apa?
-**A:** Limit adalah batas penggunaan command per hari untuk mencegah abuse. Reset setiap jam 00:00.
+**Apa itu limit?**
+Limit adalah batas penggunaan command per hari untuk mencegah abuse. Reset otomatis jam 00:00.
 
-### Q: Bagaimana cara jadi premium user?
-**A:** Owner bisa menambahkan premium user di `config.js` bagian `premiumUsers`.
+**Bagaimana cara jadi premium user?**
+Owner bisa menambahkan nomor ke array `premiumUsers` di config.js.
 
-### Q: Bot bisa multi-nomor?
-**A:** Saat ini belum support. 1 folder = 1 nomor.
-
----
-
-## 📝 Changelog
-
-Lihat [CHANGELOG.md](CHANGELOG.md) untuk riwayat perubahan lengkap.
+**Bot bisa untuk multi-nomor?**
+Saat ini satu folder hanya untuk satu nomor. Kalau mau multi-nomor, buat folder terpisah untuk setiap nomor.
 
 ---
 
-## 🤝 Kontribusi
+## Penutup
 
-Mau berkontribusi? Silakan!
+Terima kasih sudah menggunakan OurinAI! Kalau kamu suka dengan project ini, jangan lupa kasih bintang di GitHub.
 
-1. Fork repository ini
-2. Buat branch baru (`git checkout -b fitur-baru`)
-3. Commit perubahan (`git commit -m 'Tambah fitur baru'`)
-4. Push ke branch (`git push origin fitur-baru`)
-5. Buat Pull Request
+Punya pertanyaan atau saran? Silakan buat issue di repository GitHub.
 
----
-
-## 📄 Lisensi
-
-Project ini menggunakan lisensi ISC. Bebas digunakan untuk keperluan pribadi maupun komersial.
-
----
-
-## 👤 Credits
-
-- **Lucky Archz** - Developer
-- [Baileys](https://github.com/WhiskeySockets/Baileys) - WhatsApp Web API
-- [@rexxhayanasi/elaina-baileys](https://github.com/rexxhayanasi/elaina-baileys) - Enhanced Baileys
-- [node-webpmux](https://github.com/nickolaj-jepsen/node-webpmux) - WebP manipulation
-- [fluent-ffmpeg](https://github.com/fluent-ffmpeg/node-fluent-ffmpeg) - FFmpeg wrapper
+Selamat menggunakan! 🚀
 
 ---
 
 <p align="center">
-  <b>⭐ Jangan lupa kasih star kalau project ini membantu! ⭐</b>
-</p>
-
-<p align="center">
-  Made with ❤️ by Lucky Archz
+  Dibuat dengan ❤️ oleh Lucky Archz
 </p>

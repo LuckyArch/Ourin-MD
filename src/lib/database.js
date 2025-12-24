@@ -72,40 +72,33 @@ class Database {
      */
     async init() {
         try {
-            // Dynamic import for lowdb (ESM module)
-            const lowdb = await import('lowdb');
-            Low = lowdb.Low;
-            JSONFileSync = lowdb.JSONFileSync;
+            const { LowSync } = await import('lowdb')
+            const { JSONFileSync } = await import('lowdb/node')
             
-            const dbFile = path.join(this.dbPath, 'db.json');
-            const adapter = new JSONFileSync(dbFile);
-            this.db = new Low(adapter, defaultData);
+            const dbFile = path.join(this.dbPath, 'db.json')
+            const adapter = new JSONFileSync(dbFile)
+            this.db = new LowSync(adapter, defaultData)
             
-            // Read existing data
-            await this.db.read();
+            this.db.read()
             
-            // Ensure default structure
             if (!this.db.data) {
-                this.db.data = defaultData;
+                this.db.data = defaultData
             }
-            this.db.data = { ...defaultData, ...this.db.data };
+            this.db.data = { ...defaultData, ...this.db.data }
             
-            // Write to ensure file exists
-            await this.db.write();
+            this.db.write()
             
-            this.ready = true;
-            console.log('[Database] LowDB initialized successfully');
+            this.ready = true
+            console.log('[Database] LowDB initialized successfully')
             
-            // Migrate old data if exists
-            await this.migrateOldData();
+            await this.migrateOldData()
             
-            return this;
+            return this
         } catch (error) {
-            console.error('[Database] Failed to initialize:', error.message);
-            // Fallback to in-memory
-            this.db = { data: defaultData };
-            this.ready = true;
-            return this;
+            console.error('[Database] Failed to initialize:', error.message)
+            this.db = { data: defaultData, write: () => {}, read: () => {} }
+            this.ready = true
+            return this
         }
     }
     

@@ -82,19 +82,13 @@ function checkPermission(m, pluginConfig) {
  * @returns {boolean} True jika boleh diproses
  */
 function checkMode(m) {
-    const mode = config.mode || 'public';
+    const mode = config.mode || 'public'
     
-    switch (mode) {
-        case 'self':
-            return m.isOwner;
-        case 'group':
-            return m.isGroup || m.isOwner;
-        case 'private':
-            return !m.isGroup || m.isOwner;
-        case 'public':
-        default:
-            return true;
+    if (mode === 'self') {
+        return m.fromMe || m.isOwner
     }
+    
+    return true
 }
 
 /**
@@ -250,52 +244,46 @@ async function messageHandler(msg, sock) {
  */
 async function groupHandler(update, sock) {
     try {
-        const { id: groupJid, participants, action } = update;
+        const { id: groupJid, participants, action } = update
         
-        if (!config.features?.welcomeMessage && !config.features?.leaveMessage) {
-            return;
+        const db = getDatabase()
+        
+        let groupData = db.getGroup(groupJid)
+        if (!groupData) {
+            db.createGroup(groupJid, {
+                welcome: config.welcome?.defaultEnabled ?? true,
+                goodbye: config.goodbye?.defaultEnabled ?? true,
+                leave: config.goodbye?.defaultEnabled ?? true
+            })
+            groupData = db.getGroup(groupJid)
         }
         
-        const db = getDatabase();
-        const groupData = db.getGroup(groupJid);
+        const groupMeta = await sock.groupMetadata(groupJid)
         
-        if (!groupData) return;
-        
-        const groupMeta = await sock.groupMetadata(groupJid);
+        let sendWelcomeMessage, sendGoodbyeMessage
+        try {
+            sendWelcomeMessage = require('../plugins/group/welcome').sendWelcomeMessage
+            sendGoodbyeMessage = require('../plugins/group/goodbye').sendGoodbyeMessage
+        } catch (e) {
+            return
+        }
         
         for (let participant of participants) {
-            // Convert LID to standard JID
             if (isLid(participant)) {
-                participant = lidToJid(participant);
+                participant = lidToJid(participant)
             }
             
-            const participantName = participant.split('@')[0];
-            
-            if (action === 'add' && groupData.welcome) {
-                const welcomeText = `*Selamat Datang* 👋\n\n` +
-                    `Hai @${participantName}!\n` +
-                    `Selamat datang di grup *${groupMeta.subject}*\n\n` +
-                    `Jangan lupa baca rules ya!`;
-                
-                await sock.sendMessage(groupJid, {
-                    text: welcomeText,
-                    mentions: [participant]
-                });
+            if (action === 'add') {
+                await sendWelcomeMessage(sock, groupJid, participant, groupMeta)
             }
             
-            if (action === 'remove' && groupData.leave) {
-                const leaveText = `*Goodbye* 👋\n\n` +
-                    `Sampai jumpa @${participantName}!`;
-                
-                await sock.sendMessage(groupJid, {
-                    text: leaveText,
-                    mentions: [participant]
-                });
+            if (action === 'remove') {
+                await sendGoodbyeMessage(sock, groupJid, participant, groupMeta)
             }
         }
         
     } catch (error) {
-        console.error('[GroupHandler] Error:', error);
+        console.error('[GroupHandler] Error:', error.message)
     }
 }
 

@@ -150,7 +150,7 @@ async function startConnection(options = {}) {
     const { version, isLatest } = await fetchLatestBaileysVersion();
     colors.logger.info('Connection', `Menggunakan WA v${version.join('.')}, isLatest: ${isLatest}`);
     
-    const usePairingCode = config.session?.pairingCode === true;
+    const usePairingCode = config.session?.usePairingCode === true;
     const pairingNumber = config.session?.pairingNumber || '';
     
     const sock = makeWASocket({
